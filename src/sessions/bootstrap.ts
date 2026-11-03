@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import {
+  DefaultResourceLoader,
   type AgentSession,
   SessionManager,
   SettingsManager,
@@ -49,6 +50,14 @@ export async function buildInnerSession(opts: PiSessionOptions): Promise<PiInner
     );
   }
   await fs.mkdir(opts.agentDir, { recursive: true });
+  const settingsManager = SettingsManager.inMemory();
+  const resourceLoader = new DefaultResourceLoader({
+    cwd: opts.cwd,
+    agentDir: opts.agentDir,
+    settingsManager,
+    ...(opts.systemPrompt !== undefined ? { systemPrompt: opts.systemPrompt } : {}),
+  });
+  await resourceLoader.reload();
   const created = await createAgentSession({
     cwd: opts.cwd,
     // Per-session isolated agent dir: never mutates ~/.pi/agent.
@@ -58,7 +67,8 @@ export async function buildInnerSession(opts: PiSessionOptions): Promise<PiInner
     model,
     ...(opts.thinkingLevel !== undefined ? { thinkingLevel: opts.thinkingLevel } : {}),
     // In-memory settings so we never mutate the user's global pi settings.
-    settingsManager: SettingsManager.inMemory(),
+    settingsManager,
+    resourceLoader,
     // pi 1.5.0: SessionManager.create(cwd, sessionDir)
     sessionManager: SessionManager.create(opts.cwd, opts.agentDir),
   });

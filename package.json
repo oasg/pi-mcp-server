@@ -4,13 +4,17 @@
   "description": "MCP server that bridges Claude Code and the pi coding agent",
   "type": "module",
   "main": "dist/index.js",
-  "bin": { "pi-mcp-server": "dist/index.js" },
+  "bin": {
+    "pi-mcp-server": "dist/index.js",
+    "pi-sessions": "dist/cli/index.js"
+  },
   "files": ["dist", "CHANGELOG.md"],
   "engines": { "node": ">=22.19.0" },
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
+    "sessions": "node dist/cli/index.js",
     "test": "vitest run",
     "test:live": "cross-env OPENROUTER_LIVE=1 vitest run tests/integration",
     "typecheck": "tsc --noEmit"

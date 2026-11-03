@@ -141,6 +141,64 @@ Output (`structuredContent`):
 
 `isError: true` only on unexpected disposal failure from pi itself.
 
+## Inspecting sessions (`pi-sessions`)
+
+The package also ships a read-only CLI that reads the JSONL transcripts pi
+writes under `SESSION_DIR`. It works whether or not `pi-mcp-server` is
+running, and never mutates a transcript.
+
+```sh
+pi-sessions                      # same as `pi-sessions list`
+pi-sessions show bd6d6dc8        # unique id prefix, full id, or a .jsonl path
+pi-sessions watch bd6d6dc8       # follow new messages as pi writes them
+```
+
+`list` prints one row per session with its inferred status, model, working
+directory, last activity, message count and cumulative cost:
+
+```
+STATUS       SESSION    MODEL                         CWD                  LAST      MSGS     COST
+running      bd6d6dc8…  opencode-go:deepseek-v4.1-f…  ~/code/app           12s ago    317  $0.1873
+interrupted  df492fb9…  openrouter:qwen/qwen3.6-plus  ~/code/app            2h ago       9  $0.0041
+```
+
+Status values are inferred from the transcript, not reported by a live
+process:
+
+| Status | Meaning |
+| --- | --- |
+| `running` | Last entry is a user message, tool call or tool result, and it is newer than `--stale` (default `120s`). |
+| `idle` | Last entry is an assistant message whose `stopReason` is not `toolUse` (the turn finished). |
+| `interrupted` | Same shape as `running`, but no new entry for longer than `--stale`; usually an aborted turn or a session left behind by a stopped server. |
+| `empty` | No messages yet. |
+| `unreadable` | The file is missing, unreadable, or larger than 64 MiB. |
+
+Useful flags:
+
+| Flag | Command | Description |
+| --- | --- | --- |
+| `--cwd <path>` | list | Only sessions started in this directory or below it. |
+| `--status <status>` | list | Filter by inferred status. |
+| `--since <duration>` | list | Only sessions active within the window, e.g. `90m`, `24h`. |
+| `--sort recent\|created\|cost\|status` | list | Sort order (default `recent`). |
+| `--tail <n>` | show, watch | Messages to print (`show` default 20, `watch` default 10; 0 shows all). |
+| `--full` | show, watch | Do not truncate message text or tool output. |
+| `--thinking` | show, watch | Include `thinking` blocks, hidden by default. |
+| `--from-start` | watch | Replay the whole transcript before following. |
+| `--json` | all | Stable machine-readable output (NDJSON for `watch`). |
+| `--dir <path>` | all | Override `SESSION_DIR` for this invocation. |
+
+Caveats:
+
+- Status is inferred at message granularity. While the model is generating a
+  long reply pi has not written anything yet, so the CLI can only report that
+  the previous entry is recent; expect a delay of up to one assistant message.
+- Only sessions under `SESSION_DIR` are visible. Sessions created by the pi
+  CLI itself (under `~/.pi/agent/sessions`) are out of scope.
+- Directories left behind by a stopped server still show up. They look
+  `idle` or `interrupted`; delete `SESSION_DIR/sessions/<id>` when you no
+  longer need them.
+
 ## Configuration
 
 | Variable | Default | Description |
@@ -212,8 +270,9 @@ tenth of a cent.
 npm install
 npm run build           # tsc → dist/
 npm run dev             # tsx watch src/index.ts
-npm test                # vitest, 55 unit tests, no network
+npm test                # vitest, 80 unit tests, no network
 npm run typecheck       # tsc --noEmit
+npm run sessions        # run the pi-sessions CLI from dist/
 ```
 
 Live smokes hit real OpenRouter and need `OPENROUTER_API_KEY` set. Each
