@@ -1,7 +1,6 @@
 import fs from 'node:fs/promises';
 import {
   type AgentSession,
-  ModelRegistry,
   SessionManager,
   SettingsManager,
   createAgentSession,
@@ -31,23 +30,36 @@ export function adaptAgentSession(s: AgentSession): PiInnerSession {
  * empty agent dir on disk.
  */
 export async function buildInnerSession(opts: PiSessionOptions): Promise<PiInnerSession> {
-  const registry = ModelRegistry.create(opts.authStorage);
   const { provider, modelId } = parseModelString(opts.model);
-  const model = registry.find(provider, modelId);
+  const model = opts.modelRuntime.getModel(provider, modelId);
   if (!model) {
-    throw new Error(`Model not found: provider=${JSON.stringify(provider)} id=${JSON.stringify(modelId)}`);
+    const available = opts.modelRuntime
+      .getModels(provider)
+      .map((m) => m.id)
+      .slice(0, 20);
+    throw new Error(
+      `Model not found: provider=${JSON.stringify(provider)} id=${JSON.stringify(modelId)}` +
+        (available.length > 0 ? `. Available for ${provider}: ${available.join(', ')}` : ''),
+    );
+  }
+  if (!opts.modelRuntime.hasConfiguredAuth(provider)) {
+    throw new Error(
+      `No credentials configured for provider ${JSON.stringify(provider)}. ` +
+        'Log in with `pi` (or set the provider API key) and retry.',
+    );
   }
   await fs.mkdir(opts.agentDir, { recursive: true });
   const created = await createAgentSession({
     cwd: opts.cwd,
+    // Per-session isolated agent dir: never mutates ~/.pi/agent.
     agentDir: opts.agentDir,
-    authStorage: opts.authStorage,
-    modelRegistry: registry,
+    // Shared runtime so the isolated agent dir still sees the user's auth.
+    modelRuntime: opts.modelRuntime,
     model,
     ...(opts.thinkingLevel !== undefined ? { thinkingLevel: opts.thinkingLevel } : {}),
     // In-memory settings so we never mutate the user's global pi settings.
     settingsManager: SettingsManager.inMemory(),
-    // pi 0.74.1: SessionManager.create(cwd, agentDir)
+    // pi 1.5.0: SessionManager.create(cwd, sessionDir)
     sessionManager: SessionManager.create(opts.cwd, opts.agentDir),
   });
   return adaptAgentSession(created.session);

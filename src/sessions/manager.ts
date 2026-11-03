@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
-import type { AuthStorage } from '@earendil-works/pi-coding-agent';
+import type { ModelRuntime } from '@earendil-works/pi-coding-agent';
 import type { Logger } from '../log.js';
 import { PiSession } from './session.js';
 import { agentDirFor } from './paths.js';
@@ -26,7 +26,7 @@ export interface SessionInfo {
 
 export interface SessionManagerDeps {
   readonly sessionDir: string;
-  readonly authStorage: AuthStorage;
+  readonly modelRuntime: ModelRuntime;
   readonly logger: Logger;
   /**
    * Override for tests. Production: omit (defaults to PiSession.create).
@@ -44,7 +44,7 @@ interface Entry {
 
 export class SessionManager {
   private readonly sessionDir: string;
-  private readonly authStorage: AuthStorage;
+  private readonly modelRuntime: ModelRuntime;
   private readonly logger: Logger;
   private readonly createSession: (opts: PiSessionOptions) => Promise<PiSession>;
   private readonly now: () => number;
@@ -52,7 +52,7 @@ export class SessionManager {
 
   constructor(deps: SessionManagerDeps) {
     this.sessionDir = deps.sessionDir;
-    this.authStorage = deps.authStorage;
+    this.modelRuntime = deps.modelRuntime;
     this.logger = deps.logger;
     this.createSession = deps.createSession ?? PiSession.create;
     this.now = deps.now ?? Date.now;
@@ -76,7 +76,7 @@ export class SessionManager {
       id: sessionId,
       cwd: opts.cwd,
       agentDir,
-      authStorage: this.authStorage,
+      modelRuntime: this.modelRuntime,
       model: opts.model,
       // Spread-with-condition keeps exactOptionalPropertyTypes happy: we never
       // assign `undefined` to an optional field, we just omit it.

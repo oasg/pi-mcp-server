@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
-import type { AuthStorage } from '@earendil-works/pi-coding-agent';
+import type { ModelRuntime } from '@earendil-works/pi-coding-agent';
 import { SessionManager } from '../../src/sessions/manager.js';
 import type { PiSession } from '../../src/sessions/session.js';
 import type { PiSessionOptions, PromptOptions, PromptResult } from '../../src/sessions/types.js';
@@ -43,8 +43,8 @@ function buildHarness(tickStart = 1_000): { mgr: SessionManager; fakes: FakePiSe
   const tick = (): number => clock++;
   const mgr = new SessionManager({
     sessionDir: path.resolve('/tmp/pi-mcp-test'),
-    // Fake never touches authStorage; the manager just forwards it.
-    authStorage: undefined as unknown as AuthStorage,
+    // Fake never touches modelRuntime; the manager just forwards it.
+    modelRuntime: undefined as unknown as ModelRuntime,
     logger: silentLogger,
     createSession: async (opts) => {
       const fake = new FakePiSession(opts);
@@ -119,7 +119,7 @@ describe('SessionManager.create', () => {
     const captured: PiSessionOptions[] = [];
     const mgr = new SessionManager({
       sessionDir: path.resolve('/tmp/pi-mcp-test'),
-      authStorage: undefined as unknown as AuthStorage,
+      modelRuntime: undefined as unknown as ModelRuntime,
       logger: silentLogger,
       createSession: async (opts) => {
         captured.push(opts);

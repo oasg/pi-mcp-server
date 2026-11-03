@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createAuthStorage } from './auth.js';
+import { createSharedModelRuntime } from './runtime.js';
 import { loadConfig } from './config.js';
 import { createLogger } from './log.js';
 import { buildMcpServer } from './server.js';
@@ -11,12 +11,12 @@ import { PACKAGE_VERSION } from './pkg.js';
 async function main(): Promise<void> {
   const config = loadConfig(process.env);
   const logger = createLogger(config.logLevel);
-  const authStorage = createAuthStorage();
+  const modelRuntime = await createSharedModelRuntime();
   // SessionManager is process-wide: a single instance owns all pi sessions so
   // they outlive any individual HTTP-level MCP session id.
   const sessionManager = new SessionManager({
     sessionDir: config.sessionDir,
-    authStorage,
+    modelRuntime,
     logger,
   });
   const handle = await startHttpServer(

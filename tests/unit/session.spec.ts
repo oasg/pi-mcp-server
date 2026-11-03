@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { AgentSessionEvent, AuthStorage } from '@earendil-works/pi-coding-agent';
+import type { AgentSessionEvent, ModelRuntime } from '@earendil-works/pi-coding-agent';
 import {
   PiSession,
   parseModelString,
@@ -69,8 +69,8 @@ const baseOpts = {
   id: 't1',
   cwd: '/tmp/cwd',
   agentDir: '/tmp/agent',
-  // unused: tests bypass create() and never touch authStorage
-  authStorage: undefined as unknown as AuthStorage,
+  // unused: tests bypass create() and never touch modelRuntime
+  modelRuntime: undefined as unknown as ModelRuntime,
   model: 'openrouter:amazon/nova-micro-v1',
 };
 

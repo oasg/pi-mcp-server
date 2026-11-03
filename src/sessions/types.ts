@@ -1,13 +1,17 @@
-import type { AgentSessionEvent, AuthStorage } from '@earendil-works/pi-coding-agent';
+import type { AgentSessionEvent, ModelRuntime } from '@earendil-works/pi-coding-agent';
 
 /** Mirrors pi-agent-core's ThinkingLevel union (not re-exported by pi-coding-agent). */
-export type ThinkingLevel = 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
+export type ThinkingLevel = 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 
 export interface PiSessionOptions {
   readonly id: string;
   readonly cwd: string;
   readonly agentDir: string;
-  readonly authStorage: AuthStorage;
+  /**
+   * Process-wide model/auth runtime. Built once from the user's real
+   * `~/.pi/agent` so per-session agentDirs stay isolated without losing auth.
+   */
+  readonly modelRuntime: ModelRuntime;
   readonly model: string;
   readonly thinkingLevel?: ThinkingLevel;
   readonly systemPrompt?: string;
